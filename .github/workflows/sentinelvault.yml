@@ -14,30 +14,23 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Run SentinelVault Inspection
         run: |
-          echo "🛡️ [SentinelVault] Inspecting commits for secret leaks..."
-          SECRETS_FOUND=0
+          echo "🛡️ [SentinelVault] Scanning repository files for hardcoded secrets..."
 
-          # Check modified lines for AWS keys, GitHub tokens, Slack keys, etc.
-          git diff --name-only ${{ github.event.before }} ${{ github.sha }} | while read file; do
-            if [ -f "$file" ]; then
-              MATCHES=$(grep -nE "(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|sk_(live|test)_[0-9a-zA-Z]{16}|xox[baprs]-[0-9]{10}|AIza[0-9A-Za-z\-_]{35}|eyJ[A-Za-z0-9-_=]{10}\.|BEGIN.*PRIVATE KEY)" "$file" || true)
-              if [ ! -z "$MATCHES" ]; then
-                echo "🛑 [CRITICAL SECRET DETECTED in $file]"
-                echo "$MATCHES"
-                SECRETS_FOUND=1
-              fi
-            fi
-          done
+          # Inspect code for AWS keys, GitHub tokens, Slack keys, Stripe keys, Private Keys
+          MATCHES=$(grep -rnE "(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|sk_(live|test)_[0-9a-zA-Z]{16}|xox[baprs]-[0-9]{10}|AIza[0-9A-Za-z\-_]{35}|eyJ[A-Za-z0-9-_=]{10}\.|BEGIN.*PRIVATE KEY)" . \
+            --exclude-dir=".git" \
+            --exclude-dir=".github" || true)
 
-          if [ $SECRETS_FOUND -eq 1 ]; then
+          if [ -n "$MATCHES" ]; then
             echo ""
-            echo "❌ BUILD BLOCKED: Hardcoded secrets detected by SentinelVault Gate Policy!"
-            echo "👉 Push halted (Exit Code 1). Leaked credentials prevented from reaching production!"
+            echo "🛑 [CRITICAL SECRET DETECTED BY SENTINELVAULT]"
+            echo "$MATCHES"
+            echo ""
+            echo "❌ BUILD BLOCKED: SentinelVault Policy Gate Intercepted Secret Leak!"
+            echo "👉 Exit Code 1. Build halted! Code blocked from production."
             exit 1
           fi
 
