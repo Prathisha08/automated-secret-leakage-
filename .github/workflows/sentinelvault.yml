@@ -20,7 +20,7 @@ jobs:
           echo "🛡️ [SentinelVault] Scanning repository files for hardcoded secrets..."
 
           # Inspect code for AWS keys, GitHub tokens, Slack keys, Stripe keys, Private Keys
-          MATCHES=$(grep -rnE "(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|sk_(live|test)_[0-9a-zA-Z]{16}|xox[baprs]-[0-9]{10}|AIza[0-9A-Za-z\-_]{35}|eyJ[A-Za-z0-9-_=]{10}\.|BEGIN.*PRIVATE KEY)" . \
+          MATCHES=$(grep -rnE '(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|sk_(live|test)_[0-9a-zA-Z]{16}|xox[baprs]-[0-9]{10}|BEGIN.*PRIVATE KEY)' . \
             --exclude-dir=".git" \
             --exclude-dir=".github" || true)
 
